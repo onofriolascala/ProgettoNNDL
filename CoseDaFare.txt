@@ -1,7 +1,9 @@
-Aggiungere dataset locale
+Aggiungere dataset locale x
 Implementare Early stopping
-Implementare Grafici
 Implementare Softmax per loss
 Implementare identità?
-Ottimizzazione del for intra epoca
 Implementare logging
+Implementare Grafici
+Riscrivere codice, partizionando e parametrizzando le quantità richieste dal prof
+Ottimizzazione del for intra epoca
+
