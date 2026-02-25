@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import transforms, datasets
-from torch.utils.data import DataLoader, Subset, random_split
+from torch.utils.data import DataLoader, random_split
 
 input_size = 28*28
 hidden_layer_size = 32
@@ -30,7 +30,7 @@ class Net(nn.Module):
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
 
-    root = '/tmp/data'  # Root directory where data will be stored
+    root = './data'  # Root directory where data will be stored
     transform = transforms.ToTensor()  # Convert images to tensors
     # Load the full dataset
     full_dataset = datasets.MNIST(root=root, train=True, transform=transform, download=True)
