@@ -1,0 +1,7 @@
+Aggiungere dataset locale
+Implementare Early stopping
+Implementare Grafici
+Implementare Softmax per loss
+Implementare identità?
+Ottimizzazione del for intra epoca
+Implementare logging
