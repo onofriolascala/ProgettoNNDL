@@ -29,10 +29,12 @@ def compute_k(epochs):
 
 
 
-def train_net(train_loader, test_loader, net, device, optimizer, alpha, GL=True, loss_fn=nn.CrossEntropyLoss(), epochs=1000):
+def train_net(train_loader, test_loader, net, device, optimizer, early_stopping=True, loss_fn=nn.CrossEntropyLoss(),alpha = 1, GL=True, epochs=5000):
 
     train_loss = []
     val_loss = []
+    train_accuracy = []
+    val_accuracy = []
 
     best_val_loss = np.inf
     best_train_loss = np.inf
@@ -43,6 +45,8 @@ def train_net(train_loader, test_loader, net, device, optimizer, alpha, GL=True,
     for epoch in range(epochs):
         net.train()
         epoch_train_loss = 0.0
+        correct = 0
+        total = 0
         for (data, labels) in train_loader:
             data, labels = data.to(device), labels.to(device)
 
@@ -56,6 +60,12 @@ def train_net(train_loader, test_loader, net, device, optimizer, alpha, GL=True,
 
             epoch_train_loss += loss.item()
 
+            predictions = torch.argmax(output, dim=1)
+            correct += (predictions == labels).sum().item()
+            total += labels.size(0)
+
+        train_accuracy.append(correct/total)
+
         epoch_train_loss = epoch_train_loss / len(train_loader)
         train_loss.append(epoch_train_loss)
 
@@ -68,6 +78,8 @@ def train_net(train_loader, test_loader, net, device, optimizer, alpha, GL=True,
 
         net.eval()
         epoch_val_loss = 0.0
+        correct = 0
+        total = 0
         with torch.no_grad():
 
             for (data, labels) in test_loader:
@@ -80,6 +92,11 @@ def train_net(train_loader, test_loader, net, device, optimizer, alpha, GL=True,
 
                 epoch_val_loss += loss.item()
 
+                predictions = torch.argmax(output, dim=1)
+                correct += (predictions == labels).sum().item()
+                total += labels.size(0)
+
+            val_accuracy.append(correct/total)
 
             epoch_val_loss = epoch_val_loss / len(test_loader)
 
@@ -90,23 +107,23 @@ def train_net(train_loader, test_loader, net, device, optimizer, alpha, GL=True,
 
             gl_value = 100 * ((epoch_val_loss / best_val_loss) - 1)
 
-            if GL:
-                stop_criteria_value = gl_value
+            if early_stopping:
+                if GL:
+                    stop_criteria_value = gl_value
+                else:
+                    if len(strip_train_loss) >= k:
+                        pk = 1000 * ((sum(strip_train_loss) / (k * best_train_loss)) - 1)
+                        stop_criteria_value = gl_value / pk
+                        #reset the strip
+                        strip_train_loss = []
+
+                if stop_criteria_value > alpha:
+                    #log training stopped at epoch: %epoch
+                    return train_loss, val_loss, train_accuracy, val_accuracy, epoch
             else:
-                if len(strip_train_loss) >= k:
-                    pk = 1000 * ((sum(strip_train_loss) / (k * best_train_loss)) - 1)
-                    stop_criteria_value = gl_value / pk
-                    #reset the strip
-                    strip_train_loss = []
+                strip_train_loss = []
 
-            if stop_criteria_value > alpha:
-                return train_loss, val_loss
-
-    return train_loss, val_loss
-
-
-
-
+    return train_loss, val_loss, train_accuracy, val_accuracy, epochs
 
 
 
