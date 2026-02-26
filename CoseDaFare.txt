@@ -1,9 +1,10 @@
-Aggiungere dataset locale x
-Implementare Early stopping
-Implementare Softmax per loss
-Implementare identità?
+Implementare Early stopping x
+Implementare Softmax per loss x
+Implementare identità x
 Implementare logging
 Implementare Grafici x
 Riscrivere codice, partizionando e parametrizzando le quantità richieste dal prof x
 Ottimizzazione del for intra epoca x
 
+Accuracy, error trend su train e validation, num di epoche
+array?, array, integer
