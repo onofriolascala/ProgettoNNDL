@@ -3,7 +3,7 @@ Implementare Early stopping
 Implementare Softmax per loss
 Implementare identità?
 Implementare logging
-Implementare Grafici
-Riscrivere codice, partizionando e parametrizzando le quantità richieste dal prof
-Ottimizzazione del for intra epoca
+Implementare Grafici x
+Riscrivere codice, partizionando e parametrizzando le quantità richieste dal prof x
+Ottimizzazione del for intra epoca x
 
