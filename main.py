@@ -1,3 +1,4 @@
+from gettext import find
 
 import torch
 import torch.nn as nn
@@ -62,8 +63,3 @@ if __name__ == '__main__':
             plu.generic_plot()
 
     print(f"[DEBUG] Training complete")
-
-
-
-
-
