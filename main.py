@@ -29,12 +29,9 @@ if __name__ == '__main__':
     std_results = []
     nets = {}
     optimizers = {}
-    train_loader = dtu.get_train_loader(root, 10000, batch_size)
-    test_loader = dtu.get_test_loader(root, 5000, batch_size)
-    for index in hidden_layer_size:
-        nets[index] = n.Net(input_size, index, output_size)
-        nets[index].to(device) #questo serve a caricare le reti su gpu se disponibile
-        optimizers[index] = torch.optim.Rprop(nets[index].parameters(), lr=0.01)
+    train_loader = dtu.get_train_loader(root, train_set_len, batch_size=train_set_len)
+    test_loader = dtu.get_test_loader(root, test_set_len, batch_size=test_set_len)
+
 
     for index in hidden_layer_size:
         nets[index] = n.Net(input_size, index, output_size)
