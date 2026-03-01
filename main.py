@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from torchvision import transforms, datasets
 from torch.utils.data import DataLoader, random_split
 import shallow_network as n, plot_util as plu, data_util as dtu
+import json_util as jul
 
 device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 print(f"Using {device} device")
@@ -40,8 +41,8 @@ if __name__ == '__main__':
         # GL Early Stopping
         for alpha in alpha_GL:
             train_info = n.get_training_info(train_loader, test_loader, nets[index], device, optimizers[index],
-                                            loss_fn = nn.CrossEntropyLoss(), early_stopping = True, alpha = alpha,
-                                            use_gl = True, epochs = max_epochs)
+                                             loss_fn=nn.CrossEntropyLoss(), early_stopping=True, alpha=alpha,
+                                             use_gl=True, epochs=max_epochs)
             gl_results.append(train_info)
         torch.cuda.empty_cache()
         nets[index] = n.Net(input_size, index, output_size)
@@ -50,8 +51,8 @@ if __name__ == '__main__':
         # PL Early Stopping
         for alpha in alpha_PL:
             train_info = n.get_training_info(train_loader, test_loader, nets[index], device, optimizers[index],
-                                            loss_fn = nn.CrossEntropyLoss(), early_stopping = True, alpha = alpha,
-                                            use_gl = False, epochs = max_epochs)
+                                             loss_fn=nn.CrossEntropyLoss(), early_stopping=True, alpha=alpha,
+                                             use_gl=False, epochs=max_epochs)
             pl_results.append(train_info)
 
         torch.cuda.empty_cache()
@@ -103,5 +104,3 @@ if __name__ == '__main__':
                                          [range(1, train_info.max_epoch + 1), train_info.val_accuracy, "Validation Accuracy"])
 
     print(f"[DEBUG] Training complete")
-
-

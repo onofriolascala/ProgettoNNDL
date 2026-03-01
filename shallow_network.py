@@ -4,6 +4,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as f
+import time
+
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename='training.log', level=logging.INFO, filemode="w")
 
 class Net(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
@@ -31,7 +36,8 @@ def compute_k(epochs):
 
 
 def train_net(train_loader, test_loader, net, device, optimizer, loss_fn=nn.CrossEntropyLoss(), early_stopping=True, alpha = 1, use_gl=True, epochs=5000):
-
+    torch.cuda.synchronize()
+    start_time = time.time()
     train_loss = []
     val_loss = []
     train_accuracy = []
@@ -45,9 +51,11 @@ def train_net(train_loader, test_loader, net, device, optimizer, loss_fn=nn.Cros
     k = compute_k(epochs)
     stop_criteria_value = 0
 
-    print(f'[DEBUG] Starting training with number of nodes: {net.hidden_size} GL: {use_gl} alpha: {alpha} early_stopping: {early_stopping}')
+    logger.info(f' Starting training with number of nodes: {net.hidden_size} GL: {use_gl} alpha: {alpha} early_stopping: {early_stopping}')
+    print(f'[DEBUG] Starting training with\n number of nodes: {net.hidden_size} \t GL: {use_gl}\n  alpha: {alpha} \t early_stopping: {early_stopping}\n')
 
-    for epoch in range(epochs):
+    for epoch in range(1, epochs):
+        logger.info(f' Starting epoch {epoch}')
         net.train()
         epoch_train_loss = 0.0
         correct = 0
@@ -121,18 +129,30 @@ def train_net(train_loader, test_loader, net, device, optimizer, loss_fn=nn.Cros
                     stop_criteria_value = gl_value
                 else:
                     if len(strip_train_loss) >= k:
-                        pk = 1000 * ((sum(strip_train_loss) / (k * best_train_loss)) - 1)
-                        stop_criteria_value = gl_value / pk
+                        eps = 1e-8  # protezione numerica da divisioni per zero (è successo)
+                        mean_strip = sum(strip_train_loss) / (k + eps)
+                        pk = 1000 * (( mean_strip / best_train_loss + eps ) - 1)
+                        stop_criteria_value = gl_value / (pk + eps)
                         #reset the strip
                         strip_train_loss = []
 
                 if stop_criteria_value > alpha:
-                    #log training stopped at epoch: %epoch
-                    return train_loss, val_loss, train_accuracy, val_accuracy, best_train_loss_epoch, best_val_loss_epoch, epoch
+                    torch.cuda.synchronize()
+                    stop_time = time.time() - start_time
+                    logger.info(f' Early stopping at epoch {epoch} \n with the following parameters:\n '
+                                f'Last training loss: {epoch_train_loss}\n Last validation loss: {epoch_val_loss}\n '
+                                f'Best train loss: {best_train_loss}\n Best train loss epoch: {best_train_loss_epoch}\n '
+                                f'Best validation loss: {best_val_loss} \nBest validation loss epoch: {best_val_loss_epoch} ')
+                    return train_loss, val_loss, train_accuracy, val_accuracy, best_train_loss_epoch, best_val_loss_epoch, best_train_loss, best_val_loss, epoch+1, stop_time
             else:
                 strip_train_loss = []
 
-    return train_loss, val_loss, train_accuracy, val_accuracy, best_train_loss_epoch, best_val_loss_epoch, epochs
+    torch.cuda.synchronize()
+    stop_time = time.time() - start_time
+    logger.info(f' Training complete after {epochs} epochs with the following parameters:\n '
+                                f'Best train loss: {best_train_loss}\n Best train loss epoch: {best_train_loss_epoch}\n '
+                                f'Best validation loss: {best_val_loss} \nBest validation loss epoch: {best_val_loss_epoch} ')
+    return train_loss, val_loss, train_accuracy, val_accuracy, best_train_loss_epoch, best_val_loss_epoch, best_train_loss, best_val_loss, epochs, stop_time
 
 @dataclass
 class TrainInfo:
@@ -145,9 +165,12 @@ class TrainInfo:
     alpha: float
     best_train_loss_epoch: int
     best_val_loss_epoch: int
+    best_train_error: float
+    best_val_error: float
+    training_time: float
 
 def get_training_info(train_loader, test_loader, net, device, optimizer, loss_fn=nn.CrossEntropyLoss(), early_stopping=True, alpha = 1, use_gl=True, epochs=5000):
-    train_loss, val_loss, train_accuracy, val_accuracy, best_train_loss_epoch, best_val_loss_epoch, max_epoch = train_net(train_loader, test_loader, net, device, optimizer, loss_fn, early_stopping, alpha, use_gl, epochs)
+    train_loss, val_loss, train_accuracy, val_accuracy, best_train_loss_epoch, best_val_loss_epoch, best_train_loss, best_val_loss, max_epoch, training_time = train_net(train_loader, test_loader, net, device, optimizer, loss_fn, early_stopping, alpha, use_gl, epochs)
     train_info = TrainInfo(
         train_loss,
         val_loss,
@@ -158,6 +181,9 @@ def get_training_info(train_loader, test_loader, net, device, optimizer, loss_fn
         alpha,
         best_train_loss_epoch,
         best_val_loss_epoch,
+        best_train_loss,
+        best_val_loss,
+        training_time
     )
     return train_info
 
